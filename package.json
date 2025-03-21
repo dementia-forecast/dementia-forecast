@@ -1,0 +1,38 @@
+{
+  "name": "be_cap",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha",
+    "lint": "eslint"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs}": [
+      "eslint"
+    ]
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "chai": "^5.2.0",
+    "eslint": "^9.22.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "globals": "^16.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.0",
+    "mocha": "^11.1.0",
+    "prettier": "3.5.3"
+  },
+  "workspaces": [
+    "apps/*",
+    "libraries/*"
+  ],
+  "dependencies": {
+    "config": "^3.3.12",
+    "mongodb": "^6.15.0"
+  }
+}
