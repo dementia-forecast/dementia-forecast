@@ -25,7 +25,10 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.5.0",
     "mocha": "^11.1.0",
-    "prettier": "3.5.3"
+    "mongodb-memory-server": "^10.1.4",
+    "prettier": "3.5.3",
+    "sinon": "^20.0.0",
+    "supertest": "^7.1.0"
   },
   "workspaces": [
     "apps/*",
@@ -33,6 +36,8 @@
   ],
   "dependencies": {
     "config": "^3.3.12",
-    "mongodb": "^6.15.0"
+    "express": "^5.1.0",
+    "mongodb": "^6.15.0",
+    "mongoose": "^8.13.2"
   }
 }
