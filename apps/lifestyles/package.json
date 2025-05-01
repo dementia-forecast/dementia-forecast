@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "mocha \"test/**/*.test.js\" --file test/setup.js"
+    "test": "set NODE_ENV=test&& mocha \"test/**/*.test.js\" --file test/setup.js --exit"
   },
   "keywords": [],
   "author": "",

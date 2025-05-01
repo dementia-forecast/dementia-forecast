@@ -6,12 +6,13 @@ async function saveOrUpdateLifestyle(userId, questionList) {
     throw new AppError(
       "Invalid Input",
       400,
-      "Invalid userId or question_list format",
+      "userId가 존재하지 않거나 question_list 포맷이 잘못되었습니다.",
     );
   }
 
   const updates = [];
 
+  // 질문 하나씩 처리
   for (const question of questionList) {
     const { question_id, answer } = question;
 
@@ -19,7 +20,7 @@ async function saveOrUpdateLifestyle(userId, questionList) {
       throw new AppError(
         "Invalid Question Format",
         400,
-        "question_id or answer is invalid",
+        "question_id 또는 answer 포맷이 잘못되었습니다.",
       );
     }
 
@@ -28,24 +29,15 @@ async function saveOrUpdateLifestyle(userId, questionList) {
       question_id,
     );
 
-    let updatedData;
     if (existingData) {
       // 기존 데이터가 있으면 업데이트
-      updatedData = await lifestyleRepository.updateLifestyle(
-        userId,
-        question_id,
-        answer,
-      );
+      await lifestyleRepository.updateLifestyle(userId, question_id, answer);
     } else {
       // 기존 데이터가 없으면 새로 저장
-      updatedData = await lifestyleRepository.saveLifestyle(
-        userId,
-        question_id,
-        answer,
-      );
+      await lifestyleRepository.saveLifestyle(userId, question_id, answer);
     }
 
-    updates.push(updatedData);
+    updates.push({ question_id: question_id, answer: answer });
   }
 
   return updates;
@@ -53,7 +45,7 @@ async function saveOrUpdateLifestyle(userId, questionList) {
 
 async function getLifestyle(userId) {
   if (!userId) {
-    throw new AppError("Unauthorized", 401, "User ID is required");
+    throw new AppError("Invalid Input", 400, "userId가 존재하지 않습니다.");
   }
 
   return await lifestyleRepository.findByUserId(userId);

@@ -21,9 +21,10 @@ async function saveLifestyle(req, res, next) {
       question_list,
     );
 
-    return res
-      .status(200)
-      .json({ message: "라이프스타일 저장 성공", data: result });
+    return res.status(200).json({
+      message: "라이프스타일 저장 및 수정 성공",
+      data: result, // 업데이트된 데이터 반환
+    });
   } catch (err) {
     next(err); // 에러를 미들웨어로 전달
   }
@@ -38,13 +39,14 @@ async function getLifestyle(req, res, next) {
       throw new AppError(
         "Lifestyle not found",
         404,
-        "해당 사용자의 라이프스타일 데이터를 찾을 수 없습니다.",
+        "사용자의 라이프 스타일 정보가 존재하지 않습니다.",
       );
     }
 
-    return res
-      .status(200)
-      .json({ message: "라이프스타일 조회 성공", data: result });
+    return res.status(200).json({
+      message: "라이프스타일 조회 성공",
+      question_list: result.question_list,
+    });
   } catch (err) {
     next(err); // 에러를 미들웨어로 전달
   }
