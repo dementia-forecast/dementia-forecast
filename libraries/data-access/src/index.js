@@ -1,6 +1,13 @@
-const { connectToDB, closeDB } = require("./mongodb");
+const {
+  connectToDB,
+  closeDB,
+  connectMongoose,
+  disconnectMongoose,
+} = require("./mongodb");
 
 module.exports = {
   connectToDB,
   closeDB,
+  connectMongoose,
+  disconnectMongoose,
 };
