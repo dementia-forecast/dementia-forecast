@@ -9,14 +9,11 @@ const ErrorHandler = {
     if (err instanceof AppError) {
       // 운영 에러 처리
       res.status(err.statusCode).json({
-        statusCode: err.statusCode,
         message: err.message,
       });
     } else {
       // 예기치 못한 에러 처리
-      console.error(err);
       res.status(500).json({
-        statusCode: 500,
         message: err.message || "Internal Server Error",
       });
     }
