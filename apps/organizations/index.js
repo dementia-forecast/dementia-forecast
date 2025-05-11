@@ -1,7 +1,8 @@
 const express = require("express");
 const authenticater = require("../../libraries/authenticate/src"); // 인증 미들웨어
-const lifestyleController = require("./entry-points/controller"); // 컨트롤러
+const orgController = require("./entry-points/Controller"); // 컨트롤러
 const ErrorHandler = require("../../libraries/error-handling/src/ErrorHandler");
+const redisClient = require("../../libraries/cache-store/redisClient");
 const { connectMongoose } = require("../../libraries/data-access/src");
 
 const app = express();
@@ -10,24 +11,24 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 라이프스타일 저장 및 수정 API
+// 2차 인증 번호 전송
 app.post(
-  "/lifestyle/save",
+  "/org/second-auth/send-code",
   authenticater.authenticate,
-  lifestyleController.saveLifestyle,
+  orgController.secAuthSend,
 );
 
-// 라이프스타일 조회 API
+// 2차 인증 번호 인증
 app.post(
-  "/lifestyle/send",
+  "/org/second-auth/verify-code",
   authenticater.authenticate,
-  lifestyleController.getLifestyle,
+  orgController.secAuthVerify,
 );
 
 // 에러 미들웨어 개선 (에러가 발생하면 ErrorHandler로 처리)
 app.use((err, req, res, next) => {
   ErrorHandler.handleError(err, res);
-  console.log(next); // eslint 에러 예방
+  console.log(next);
 });
 
 // 예기치 못한 에러 방어 (서버 전체 적용)
@@ -44,9 +45,12 @@ async function startServer() {
   try {
     const isTest = process.env.NODE_ENV === "test";
     if (!isTest) {
-      await connectMongoose(); // DB 연결 먼저 시도
+      if (!redisClient.isOpen) {
+        await redisClient.connect();
+      }
+      await connectMongoose(); // DB 연결시도
     }
-    const PORT = 3000;
+    const PORT = 3001;
     app.listen(PORT, () => {
       console.log(`서버가 ${PORT} 포트에서 실행 중입니다.`);
     });

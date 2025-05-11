@@ -9,12 +9,30 @@ const lifestyleRepository = require("../../data-access/lifestyleRepository.js");
 
 describe("컨트롤러 & app", () => {
   afterEach(async () => {
-    await SurveyResult.deleteMany();
+    await SurveyResult.deleteMany({});
   });
 
   // saveLifestyle
   describe("saveLifestyle 에러 작동 테스트", () => {
     const token = jwt.sign({ userId: 1 }, apiKey);
+
+    it("Service에서 throw한 Error가 에러 핸들러 미들웨어까지 도달한다", async () => {
+      const res = await request(app)
+        .post("/lifestyle/save")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          question_list: [
+            { question_id: null, answer: "1" },
+            { question_id: 2, answer: "2" },
+            { question_id: 3, answer: "3" },
+          ],
+        });
+
+      expect(res.status).to.equal(400);
+      expect(res.body.message).to.equal(
+        "question_id 또는 answer 포맷이 잘못되었습니다.",
+      );
+    });
 
     it("question_list가 null이라면 AppError를 던진다.", async () => {
       const res = await request(app)
@@ -24,6 +42,78 @@ describe("컨트롤러 & app", () => {
 
       expect(res.status).to.equal(400);
       expect(res.body.message).to.equal("question_list가 유효하지 않습니다.");
+    });
+
+    // authenticate 테스트
+    it("token이 null이라면 AppError를 던진다.", async () => {
+      const res = await request(app)
+        .post("/lifestyle/save")
+        .send({
+          question_list: [
+            { question_id: 1, answer: "1" },
+            { question_id: 2, answer: "2" },
+            { question_id: 3, answer: "3" },
+          ],
+        });
+
+      expect(res.status).to.equal(401);
+      expect(res.body.message).to.equal("Access token이 필요합니다.");
+    });
+
+    it("userId가 null이라면 AppError를 던진다.", async () => {
+      const token = jwt.sign({ userId: null }, apiKey);
+      const res = await request(app)
+        .post("/lifestyle/save")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          question_list: [
+            { question_id: 1, answer: "1" },
+            { question_id: 2, answer: "2" },
+            { question_id: 3, answer: "3" },
+          ],
+        });
+
+      expect(res.status).to.equal(401);
+      expect(res.body.message).to.equal("userId가 null입니다.");
+    });
+
+    it("토큰이 만료되면 AppError를 던진다.", async function () {
+      this.timeout(5000); // 타임아웃을 5초로 늘림
+
+      const token = jwt.sign({ userId: 1 }, apiKey, { expiresIn: "1s" });
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const res = await request(app)
+        .post("/lifestyle/save")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          question_list: [
+            { question_id: 1, answer: "1" },
+            { question_id: 2, answer: "2" },
+            { question_id: 3, answer: "3" },
+          ],
+        });
+
+      expect(res.status).to.equal(401);
+      expect(res.body.message).to.equal("토큰이 만료되었습니다.");
+    });
+
+    it("토큰 api키가 맞지 않으면 AppError를 던진다.", async () => {
+      const token = jwt.sign({ userId: 1 }, "wrongapikey");
+
+      const res = await request(app)
+        .post("/lifestyle/save")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          question_list: [
+            { question_id: 1, answer: "1" },
+            { question_id: 2, answer: "2" },
+            { question_id: 3, answer: "3" },
+          ],
+        });
+
+      expect(res.status).to.equal(401);
+      expect(res.body.message).to.equal("비밀키나 토큰 포맷이 맞지 않습니다.");
     });
   });
 
