@@ -25,8 +25,9 @@ router.get("/kakao", (req, res) => {
 
 // 카카오 로그인 콜백
 router.get("/kakao/callback", async (req, res) => {
-  const { code } = req.query;
+  const { code, platform } = req.query; // platform = 'web' or 'app'
   try {
+    // access token 요청
     const data = qs.stringify({
       grant_type: "authorization_code",
       client_id: CLIENT_ID,
@@ -43,11 +44,13 @@ router.get("/kakao/callback", async (req, res) => {
         },
       }
     );
-    const accessToken = tokenResponse.data.access_token;
 
+    const kakaoAccessToken = tokenResponse.data.access_token;
+
+    // 사용자 정보 요청
     const userResponse = await axios.get("https://kapi.kakao.com/v2/user/me", {
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${kakaoAccessToken}`,
       },
     });
 
@@ -56,18 +59,32 @@ router.get("/kakao/callback", async (req, res) => {
       nickname: userResponse.data.properties?.nickname || "",
     };
 
-    const token = jwt.sign(kakaoUser, JWT_SECRET, { expiresIn: ACCESS_EXPIRE });
+    // JWT 발급
+    const accessToken = jwt.sign(kakaoUser, JWT_SECRET, {
+      expiresIn: ACCESS_EXPIRE,
+    });
+    const refreshToken = jwt.sign(kakaoUser, JWT_SECRET, {
+      expiresIn: REFRESH_EXPIRE,
+    });
 
-    res.cookie("token", token, {
+    // 앱 대응: 딥링크 redirect
+    if (platform === "app") {
+      const redirectUrl = `myapp://login-callback?accessToken=${accessToken}&refreshToken=${refreshToken}`;
+      return res.redirect(redirectUrl);
+    }
+
+    // 웹 대응: JSON 응답 + 쿠키 저장
+    res.cookie("token", accessToken, {
       httpOnly: true,
       secure: false,
       sameSite: "none",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({
+    res.status(200).json({
       message: "로그인 성공",
-      token: token,
+      accessToken,
+      refreshToken,
     });
   } catch (error) {
     console.error("카카오 로그인 오류:", error);
@@ -175,6 +192,7 @@ router.post("/login", async (req, res) => {
       message: "로그인 성공",
       accessToken,
       refreshToken,
+      name: user.name,
     });
   } catch (error) {
     console.error("로그인 중 오류:", error);
