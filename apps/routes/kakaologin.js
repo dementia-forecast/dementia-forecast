@@ -25,9 +25,17 @@ router.get("/kakao", (req, res) => {
 
 // 카카오 로그인 콜백
 router.get("/kakao/callback", async (req, res) => {
-  const { code, platform } = req.query; // platform = 'web' or 'app'
+  const { code, platform } = req.query;
+  const client = new MongoClient(uri, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
+
   try {
-    // access token 요청
+    // 1️⃣ 카카오 API에서 토큰 받아오기
     const data = qs.stringify({
       grant_type: "authorization_code",
       client_id: CLIENT_ID,
@@ -44,28 +52,57 @@ router.get("/kakao/callback", async (req, res) => {
         },
       }
     );
-
     const kakaoAccessToken = tokenResponse.data.access_token;
 
-    // 사용자 정보 요청
+    // 2️⃣ 사용자 정보 받아오기
     const userResponse = await axios.get("https://kapi.kakao.com/v2/user/me", {
       headers: {
         Authorization: `Bearer ${kakaoAccessToken}`,
       },
     });
 
-    const kakaoUser = {
-      id: userResponse.data.id,
-      nickname: userResponse.data.properties?.nickname || "",
-    };
+    const kakaoId = userResponse.data.id;
+    const nickname = userResponse.data.properties?.nickname || "";
+    const email = userResponse.data.kakao_account?.email;
 
-    // JWT 발급
-    const accessToken = jwt.sign(kakaoUser, JWT_SECRET, {
-      expiresIn: ACCESS_EXPIRE,
-    });
-    const refreshToken = jwt.sign(kakaoUser, JWT_SECRET, {
-      expiresIn: REFRESH_EXPIRE,
-    });
+    // 3️⃣ DB 연결
+    await client.connect();
+    const db = client.db("dmnta0322");
+
+    // 4️⃣ Users 컬렉션에서 email로 기존 유저 찾기
+    let user = await db.collection("Users").findOne({ email });
+
+    if (user) {
+      // 기존 유저가 있으면 kakaoId 업데이트
+      if (!user.kakaoId) {
+        await db
+          .collection("Users")
+          .updateOne({ email }, { $set: { kakaoId: kakaoId } });
+      }
+    } else {
+      // 없으면 새로 생성
+      const newUser = {
+        email,
+        name: nickname,
+        kakaoId,
+        created_at: new Date(),
+      };
+      await db.collection("Users").insertOne(newUser);
+      user = newUser;
+    }
+
+    // 5️⃣ JWT 발급
+    const accessToken = jwt.sign(
+      { id: user._id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: ACCESS_EXPIRE }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user._id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: REFRESH_EXPIRE }
+    );
 
     // 앱 대응: 딥링크 redirect
     if (platform === "app") {
@@ -196,6 +233,7 @@ router.post("/login", async (req, res) => {
     });
   } catch (error) {
     console.error("로그인 중 오류:", error);
+    console.error("카카오 오류 응답:", error.response?.data);
     res.status(500).json({
       statusCode: 500,
       message: "서버 오류 발생",
@@ -219,13 +257,13 @@ router.post("/refresh-token", async (req, res) => {
   try {
     const decoded = jwt.verify(refreshToken, JWT_SECRET);
 
-    const { email, name } = decoded;
+    const { id, email } = decoded;
 
-    const newAccessToken = jwt.sign({ email, name }, JWT_SECRET, {
+    const newAccessToken = jwt.sign({ id, email }, JWT_SECRET, {
       expiresIn: ACCESS_EXPIRE,
     });
 
-    const newRefreshToken = jwt.sign({ email, name }, JWT_SECRET, {
+    const newRefreshToken = jwt.sign({ id, email }, JWT_SECRET, {
       expiresIn: REFRESH_EXPIRE,
     });
 
