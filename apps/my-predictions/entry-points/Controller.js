@@ -139,10 +139,24 @@ async function getHighRiskUserCount(req, res, next) {
   }
 }
 
+async function deleteReport(req, res, next) {
+  try {
+    const userId = req.userId; // 인증된 사용자 ID
+    await PredictionService.delReport(userId);
+
+    return res.status(200).json({
+      message: "레포트 삭제 성공",
+    });
+  } catch (err) {
+    next(err); // 에러를 미들웨어로 전달
+  }
+}
+
 module.exports = {
   createReport,
   findReport,
   getReportByEmail,
   getHighRiskEmails,
   getHighRiskUserCount,
+  deleteReport,
 };

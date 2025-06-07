@@ -11,7 +11,7 @@ async function findUserIdByEmail(email) {
       throw new AppError(
         "user does not exist.",
         400,
-        "해당하는 user가 없습니다.",
+        "해당하는 user가 없습니다."
       );
     }
     return user.userId;
@@ -68,7 +68,7 @@ const updateReport = async (userId, reportData) => {
     await Report.updateOne(
       { userId: userId },
       { $set: reportData },
-      { upsert: false }, // upsert true로 하면 없으면 새로 생성
+      { upsert: false } // upsert true로 하면 없으면 새로 생성
     );
     return report;
   } catch (err) {
@@ -113,7 +113,7 @@ async function findReportByUserIdAndDate(userId, constrastDate) {
   } catch (err) {
     rethrowAppErr(
       err,
-      "해당 날짜에 해당하는 레포트 가져오기에 실패하였습니다.",
+      "해당 날짜에 해당하는 레포트 가져오기에 실패하였습니다."
     );
   }
 }
@@ -171,6 +171,18 @@ async function countHighRiskUsers(orgid) {
   }
 }
 
+async function deleteByUserId(userId) {
+  try {
+    return await Report.deleteMany({ userId });
+  } catch (err) {
+    rethrowAppErr(err, {
+      name: "Unexpected ReportRepository error",
+      statusCode: 500,
+      description: "ReportRepository 예기치 못한 오류가 발생했습니다.",
+    });
+  }
+}
+
 module.exports = {
   findUserIdByEmail,
   findUserByUserId,
@@ -182,4 +194,5 @@ module.exports = {
   findReportByUserIdAndDate,
   findHighRiskEmails,
   countHighRiskUsers,
+  deleteByUserId,
 };

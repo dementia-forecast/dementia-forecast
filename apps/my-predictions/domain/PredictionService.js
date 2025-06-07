@@ -18,7 +18,7 @@ const {
 } = require("@aws-crypto/client-node");
 
 const { encrypt, decrypt } = buildClient(
-  CommitmentPolicy.REQUIRE_ENCRYPT_REQUIRE_DECRYPT,
+  CommitmentPolicy.REQUIRE_ENCRYPT_REQUIRE_DECRYPT
 );
 
 require("dotenv").config();
@@ -75,7 +75,7 @@ async function makePrediction(userId, parsedData) {
     const [riskScore, lifelogValues] = await makePredictionRequest(
       parsedData,
       surveyResult,
-      user,
+      user
     );
     console.log("예측된 리스크 점수:", riskScore);
 
@@ -92,7 +92,7 @@ async function makePrediction(userId, parsedData) {
       JSON.stringify(lifelogValues),
       {
         encryptionContext: context,
-      },
+      }
     );
 
     /*
@@ -125,7 +125,7 @@ async function makePrediction(userId, parsedData) {
       JSON.stringify(Lifestyles),
       {
         encryptionContext: context,
-      },
+      }
     );
 
     /*
@@ -205,7 +205,7 @@ function processActivityFeatures(dataList, height, weight, user) {
   console.log("age: ", age);
 
   const exercise = dataList.find(
-    (item) => item.biometric_data_type === "exercise",
+    (item) => item.biometric_data_type === "exercise"
   );
   const exercises = exercise ? exercise.biometric_data_value : [];
 
@@ -356,11 +356,11 @@ function getTimeOnlyMidpoint(start_time, end_time) {
 
 function processSleepFeatures(biometric_data_list) {
   const sleep = biometric_data_list.find(
-    (d) => d.biometric_data_type === "sleep",
+    (d) => d.biometric_data_type === "sleep"
   );
   console.log("sleep", sleep);
   const heartRate = biometric_data_list.find(
-    (d) => d.biometric_data_type === "heart_rate",
+    (d) => d.biometric_data_type === "heart_rate"
   );
 
   const summary = sleep?.biometric_data_value?.summary || {};
@@ -388,7 +388,7 @@ function processSleepFeatures(biometric_data_list) {
   const sleep_awake = Math.abs(
     (diffInMs / 60000 -
       (total_light_duration + total_deep_duration + total_rem_duration)) *
-      60,
+      60
   ); // 초 단위
 
   // 17. sleep_deep
@@ -422,14 +422,14 @@ function processSleepFeatures(biometric_data_list) {
       2;
     sleep_midpoint_at_delta = getTimeOnlyMidpoint(
       new Date(midpoint1),
-      new Date(midpoint2),
+      new Date(midpoint2)
     ); // 초 단위
   }
 
   // 24. sleep_midpoint_time
   const midpointTimeMs = getTimeOnlyMidpoint(
     new Date(start_time).getTime(),
-    new Date(end_time).getTime(),
+    new Date(end_time).getTime()
   ); // 초 단위
 
   // 25. sleep_period_id - 제외
@@ -476,7 +476,7 @@ async function makePredictionRequest(parsedData, surveyResult, user) {
         dataList,
         parsedData.height,
         parsedData.weight,
-        user,
+        user
       );
 
       const sleepFeatures = processSleepFeatures(dataList);
@@ -488,7 +488,7 @@ async function makePredictionRequest(parsedData, surveyResult, user) {
     console.log("lifelogValues", lifelogValues);
 
     const lifestyleValues = surveyResult.question_list.map(({ answer }) =>
-      parseFloat(answer),
+      parseFloat(answer)
     );
 
     const requestBody = {
@@ -500,7 +500,7 @@ async function makePredictionRequest(parsedData, surveyResult, user) {
 
     const response = await axios.post(
       "http://13.209.72.104/prediction/multimodal",
-      requestBody,
+      requestBody
     );
     //const response = { data: { risk_score: 1 } };
 
@@ -530,12 +530,12 @@ async function findReportByDate(userId, dateParam) {
     const minute = 0;
     const second = 0;
     const contrastDate = new Date(
-      Date.UTC(year, month - 1, day, hour, minute, second),
+      Date.UTC(year, month - 1, day, hour, minute, second)
     );
 
     const report = await ReportRepository.findReportByUserIdAndDate(
       userId,
-      contrastDate,
+      contrastDate
     );
 
     // riskScore는 숫자형이므로 바로 가져오기
@@ -545,10 +545,10 @@ async function findReportByDate(userId, dateParam) {
     const lifelogValues = [];
     const awsdecLifelogs = await decrypt(
       keyring,
-      Buffer.from(report.lifelogs, "base64"),
+      Buffer.from(report.lifelogs, "base64")
     );
     const decryptedLifeLogs = JSON.parse(
-      awsdecLifelogs.plaintext.toString("utf-8"),
+      awsdecLifelogs.plaintext.toString("utf-8")
     );
     for (const [index, value] of decryptedLifeLogs.entries()) {
       lifelogValues.push({
@@ -571,10 +571,10 @@ async function findReportByDate(userId, dateParam) {
     const lifeStyleValues = [];
     const awsdecLifeStyles = await decrypt(
       keyring,
-      Buffer.from(report.lifestyles, "base64"),
+      Buffer.from(report.lifestyles, "base64")
     );
     const decryptedAnswer = JSON.parse(
-      awsdecLifeStyles.plaintext.toString("utf-8"),
+      awsdecLifeStyles.plaintext.toString("utf-8")
     );
 
     for (const [index, value] of decryptedAnswer.entries()) {
@@ -604,7 +604,24 @@ async function findReportByDate(userId, dateParam) {
   }
 }
 
+async function delReport(userId) {
+  try {
+    if (!userId) {
+      throw new AppError("Invalid Input", 400, "userId가 존재하지 않습니다.");
+    }
+
+    return await ReportRepository.deleteByUserId(userId);
+  } catch (err) {
+    rethrowAppErr(err, {
+      name: "Unexpected PredictionService error",
+      statusCode: 500,
+      description: "PredictionService에서 예기치 못한 오류가 발생했습니다.",
+    });
+  }
+}
+
 module.exports = {
   makePrediction,
   findReportByDate,
+  delReport,
 };
