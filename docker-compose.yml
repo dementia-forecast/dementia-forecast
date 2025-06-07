@@ -1,0 +1,38 @@
+version: "3.8"
+
+# mongo atlas - 클라우드 기반의 완전 관리형 MongoDB 서비스 -> 도커로 서버 띄울 필요 x
+
+services:
+  lifestyles:
+    build:
+      context: ./apps/lifestyles
+      dockerfile: Dockerfile
+    env_file:
+      - ./apps/lifestyles/.env # 서비스 전용 .env
+    environment:
+      NODE_ENV: production # 덮어쓰기용 개별 변수
+    ports:
+      - "3000:3000" # 호스트 3000 -> 컨테이너 3000
+  my-predictions:
+    build:
+      context: ./apps/my-predictions
+      dockerfile: Dockerfile
+    env_file:
+      - ./apps/my-predictions/.env # 서비스 전용 .env
+    environment:
+      NODE_ENV: production # 덮어쓰기용 개별 변수
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+    ports:
+      - "3001:3001" # 호스트 3001 -> 컨테이너 3001
+  users:
+    build:
+      context: ./apps/users
+      dockerfile: Dockerfile
+    env_file:
+      - ./apps/users/.env # 서비스 전용 .env
+    environment:
+      NODE_ENV: production # 덮어쓰기용 개별 변수
+    ports:
+      - "8080:8080" # 호스트 8080 -> 컨테이너 8080

@@ -1,0 +1,34 @@
+# Node modules - 각 서비스마다 따로 있으니 루트 node_modules는 제외
+node_modules
+**/node_modules
+
+# 테스트 관련 파일/폴더 제외
+**/__tests__/
+**/test/
+**/tests/
+**/*.test.js
+**/*.spec.js
+**/*.test.ts
+**/*.spec.ts
+
+# Git 관련
+.git
+.gitignore
+
+# 로그 파일
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE, 에디터 관련
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Husky 관련
+.husky/
+
+# 기타 OS 파일
+.DS_Store
+Thumbs.db
