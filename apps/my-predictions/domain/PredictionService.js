@@ -16,10 +16,18 @@ const {
   buildClient,
   CommitmentPolicy,
 } = require("@aws-crypto/client-node");
+const {
+  KMSClient,
+  GenerateDataKeyCommand,
+  EncryptCommand,
+  DecryptCommand,
+} = require("@aws-sdk/client-kms");
 
 const { encrypt, decrypt } = buildClient(
   CommitmentPolicy.REQUIRE_ENCRYPT_REQUIRE_DECRYPT
 );
+
+const kmsClient = new KMSClient({ region: "ap-northeast-2" });
 
 require("dotenv").config();
 const generatorKeyId = process.env.KMSARN;
@@ -27,7 +35,16 @@ const keyId = process.env.KEYID;
 
 const keyIds = [keyId];
 
-const keyring = new KmsKeyringNode({ generatorKeyId, keyIds });
+const keyring = new KmsKeyringNode({
+  generatorKeyId,
+  keyIds,
+  clientProvider: () => ({
+    generateDataKey: async (args) =>
+      kmsClient.send(new GenerateDataKeyCommand(args)),
+    encrypt: async (args) => kmsClient.send(new EncryptCommand(args)),
+    decrypt: async (args) => kmsClient.send(new DecryptCommand(args)),
+  }),
+});
 
 const context = {
   stage: "demo",

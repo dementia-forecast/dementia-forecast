@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "@aws-crypto/client-node": "^4.2.1",
+    "@aws-sdk/client-kms": "^3.830.0",
     "axios": "^1.9.0",
     "config": "^3.3.12",
     "crypto": "^1.0.1",
